@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<meta name="theme-color" content="#0b172c">
+<title>Florecitas amarillas para ti 🌼</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;min-height:100%;background:#0b172c}body{color:#fff5d8;-webkit-font-smoothing:antialiased;font-family:Georgia,'Times New Roman',serif;overflow:hidden}.scene{position:relative;width:100%;height:100svh;min-height:540px;overflow:hidden;background:radial-gradient(ellipse at 50% 64%,#26384a 0%,#142740 42%,#0b172c 80%)}canvas{position:absolute;inset:0;width:100%;height:100%;display:block}header{position:absolute;z-index:1;top:6%;left:18px;right:18px;text-align:center;pointer-events:none}.eyebrow{font:10px/1.5 system-ui,sans-serif;letter-spacing:.38em;text-transform:uppercase;color:#c2bb9b;margin:0 0 16px}h1{font-weight:400;font-size:clamp(29px,4.2vw,58px);line-height:1.13;letter-spacing:-.025em;margin:0;text-wrap:balance;text-shadow:0 2px 30px #f5d37815}h1 span{color:#f5d575;font-style:italic}h1 .name{display:block;font-size:.62em;margin-top:11px;color:#f8ecd0;font-style:normal}.footer{position:absolute;bottom:25px;left:24px;right:24px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:2}.note{font-size:14px;font-style:italic;letter-spacing:.03em;color:#e6ddbc;margin:0;text-shadow:0 2px 8px #07111c}button{min-height:44px;min-width:44px;border:1px solid #dfcf8b40;border-radius:30px;background:#101e30b0;color:#f7e6b4;padding:10px 17px;font:11px system-ui,sans-serif;letter-spacing:.04em;cursor:pointer;backdrop-filter:blur(12px);transition:background .2s,transform .2s}button:hover{background:#334053}button:active{transform:scale(.96)}button:focus-visible{outline:2px solid #f5d575;outline-offset:4px}.controls{display:flex;gap:8px}@media(max-width:600px){header{top:6%}.eyebrow{font-size:9px;margin-bottom:16px}h1{font-size:32px}.footer{bottom:18px;left:16px;right:16px;flex-wrap:wrap;justify-content:center}.note{width:100%;text-align:center;font-size:12px}.controls button{font-size:10px;padding:8px 14px}}@media(max-height:620px) and (min-width:601px){header{top:3%}h1{font-size:30px}.eyebrow{margin-bottom:8px}}@media(prefers-reduced-motion:reduce){button{transition:none}}
+
+/* Keep the dedication readable while giving the tree most of the scene. */
+body{overflow:auto}.scene{min-height:700px}header{top:24px}.eyebrow{margin-bottom:10px}h1{font-size:clamp(28px,3vw,43px)}h1 br{display:none}h1 .name{margin-top:7px;font-size:.65em}
+.footer{bottom:14px;flex-direction:column;gap:12px;left:20px;right:20px}.note{max-width:750px;text-align:center;font-size:clamp(14px,1.4vw,18px);line-height:1.55;text-wrap:pretty;background:linear-gradient(90deg,transparent,#0b172cbb 20%,#0b172cbb 80%,transparent);padding:9px 14px;border-radius:14px}.controls{justify-content:center;flex-wrap:wrap;gap:7px}.music-status{font:12px/1.4 system-ui,sans-serif;color:#f8deb0;margin:0;text-align:center}.music-status:empty{display:none}
+@media(max-width:600px){.scene{min-height:760px}header{top:24px;left:14px;right:14px}.eyebrow{font-size:8px}h1{font-size:30px}h1 br{display:block}.footer{bottom:14px;left:12px;right:12px;gap:8px}.note{font-size:14px;line-height:1.45;padding:7px 10px}.controls button{font-size:10px;padding:8px 11px}}
+</style>
+</head>
+<body>
+<main class="scene" aria-label="Un árbol florece poco a poco formando un corazón de flores amarillas, rodeado de tulipanes bajo un cielo estrellado.">
+<canvas id="garden" aria-hidden="true"></canvas>
+<header><p class="eyebrow">Un pequeño jardín para ti</p><h1>Feliz día de las <br><span>florecitas amarillas</span><span class="name">sonsita 😸</span></h1></header>
+<div class="footer"><p class="note">No sé si estaré para siempre, pero quisiera que si me voy algún día te lleves un buen recuerdo de mí aunque no lo merezca 💗.</p><div class="controls"><button id="music" type="button" aria-pressed="false">♫ &nbsp; Escuchar canción</button></div><p class="music-status" id="music-status" role="status"></p></div>
+<audio id="song" src="./cancion.mp3" preload="metadata" loop></audio>
+</main>
+<script>
+'use strict';
+const canvas=document.getElementById('garden'),ctx=canvas.getContext('2d');
+let headerBottom=0,footerTop=0;
+const motionEnabled=true;
+let W,H,dpr,started=performance.now(),elapsed=0,frame=0,last=started;
+let seed=27;const random=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646};
+const stars=Array.from({length:135},()=>({x:random(),y:random()*.83,r:.4+random()*1.1,p:random()*6.28}));
+const blooms=[];
+const outline=Array.from({length:160},(_,i)=>{const a=i/160*Math.PI*2;return {x:Math.pow(Math.sin(a),3),y:(13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a))/16};});
+function insideHeart(x,y){let inside=false;for(let i=0,j=outline.length-1;i<outline.length;j=i++){const a=outline[i],b=outline[j];if(((a.y>y)!=(b.y>y))&&(x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x))inside=!inside;}return inside;}
+
+// Fill the heart silhouette with individually timed blossoms.
+for(let y=-1.08;y<1.2;y+=.063){for(let x=-1.2;x<1.2;x+=.063){let a=x+(random()-.5)*.044,b=y+(random()-.5)*.044;if(insideHeart(a,b)){blooms.push({x:a,y:-b,r:4.1+random()*2.6,rot:random()*6.28,delay:3.5+(1.2-b)*2+random()*3,tone:random(),phase:random()*6.28});}}}
+blooms.sort((a,b)=>a.delay-b.delay);
+const tulips=Array.from({length:170},(_,i)=>({x:random(),y:.79+random()*.23,s:.32+random()*.75,p:random()*6.28,delay:5+random()*6,tone:random()})).sort((a,b)=>a.y-b.y);
+const blades=Array.from({length:200},()=>({x:random(),y:.83+random()*.2,h:10+random()*45,p:random()*6}));
+const branches=[];
+function branch(x,y,length,angle,width,depth,start){const ex=x+Math.sin(angle)*length,ey=y-Math.cos(angle)*length;branches.push({x,y,ex,ey,width,start});if(depth){branch(ex,ey,length*.73,angle-.36-random()*.22,width*.65,depth-1,start+.48);branch(ex,ey,length*.74,angle+.34+random()*.23,width*.65,depth-1,start+.48);}}
+branch(0,0,100,-.035,22,4,.25);
+const clamp=n=>Math.max(0,Math.min(1,n));const ease=n=>1-Math.pow(1-clamp(n),3);
+function resize(){W=canvas.clientWidth;H=canvas.clientHeight;headerBottom=document.querySelector("header").offsetTop+document.querySelector("header").offsetHeight;footerTop=document.querySelector(".footer").offsetTop;dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);if(!motionEnabled)draw(elapsed);}
+function flower(x,y,r,rotation,tone){ctx.save();ctx.translate(x,y);ctx.rotate(rotation);ctx.fillStyle=tone>.5?'#f6c63d':'#ffdf63';for(let k=0;k<9;k++){ctx.rotate(Math.PI*2/9);ctx.beginPath();ctx.ellipse(0,-r*.65,r*.31,r*.64,0,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#745023';ctx.beginPath();ctx.arc(0,0,r*.35,0,Math.PI*2);ctx.fill();ctx.fillStyle='#c08b31';ctx.beginPath();ctx.arc(-r*.08,-r*.09,r*.14,0,Math.PI*2);ctx.fill();ctx.restore();}
+function tulip(f,t){let growth=ease((t-f.delay)/1.6);if(!growth)return;let sc=(W<600?.75:1)*f.s,base=f.y*H;ctx.save();ctx.translate(f.x*W,base);ctx.scale(sc*growth,sc*growth);ctx.rotate(Math.sin(t*1.15+f.p)*.15);ctx.strokeStyle='#4d7052';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(6,-32,0,-65);ctx.stroke();ctx.fillStyle='#365b43';ctx.beginPath();ctx.moveTo(1,-9);ctx.quadraticCurveTo(-30,-24,-23,-44);ctx.quadraticCurveTo(-3,-37,1,-9);ctx.fill();ctx.fillStyle='#52734c';ctx.beginPath();ctx.moveTo(1,-21);ctx.quadraticCurveTo(28,-36,22,-54);ctx.quadraticCurveTo(5,-43,1,-21);ctx.fill();const g=ctx.createLinearGradient(-12,-90,10,-58);g.addColorStop(0,'#ffe684');g.addColorStop(.5,f.tone>.5?'#efc43c':'#ffda55');g.addColorStop(1,'#b98320');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(0,-59);ctx.bezierCurveTo(-15,-60,-15,-76,-13,-88);ctx.lineTo(-5,-82);ctx.lineTo(0,-93);ctx.lineTo(6,-82);ctx.lineTo(13,-87);ctx.bezierCurveTo(15,-72,11,-60,0,-59);ctx.fill();ctx.strokeStyle='#b68b2b70';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(0,-61);ctx.quadraticCurveTo(-6,-71,-5,-82);ctx.moveTo(2,-61);ctx.quadraticCurveTo(7,-74,6,-82);ctx.stroke();ctx.restore();}
+function draw(t){ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+for(const s of stars){ctx.globalAlpha=.25+(.5+.5*Math.sin(t*.7+s.p))*.55;ctx.fillStyle='#e2e9ee';ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+// A soft crescent stays away from the central dedication.
+ctx.save();ctx.translate(W*.86,H*.22);ctx.rotate(-.4);ctx.shadowColor='#d7e8ed55';ctx.shadowBlur=20;ctx.fillStyle='#d8e3df';ctx.beginPath();ctx.arc(0,0,W<600?12:19,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.globalCompositeOperation='destination-out';ctx.beginPath();ctx.arc(7,-5,W<600?11:18,0,Math.PI*2);ctx.fill();ctx.restore();
+// A bright shooting star enters every 2.8 seconds, starting immediately.
+if(motionEnabled){for(let i=0;i<3;i++){const cycle=(t+i*2.8)%8.4;if(cycle<2.3){const p=cycle/2.3,x=W*(-.15+i*.19+p*.9),y=H*(.10+i*.09+p*.22),tail=Math.min(210,W*.35);ctx.save();ctx.globalAlpha=Math.sin(p*Math.PI);const g=ctx.createLinearGradient(x-tail,y-tail*.42,x,y);g.addColorStop(0,'#cdeaff00');g.addColorStop(.7,'#cdeeff70');g.addColorStop(1,'#ffffff');ctx.strokeStyle=g;ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(x-tail,y-tail*.42);ctx.lineTo(x,y);ctx.stroke();ctx.shadowColor='#cfedff';ctx.shadowBlur=15;ctx.fillStyle='#fff9e8';ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill();ctx.restore();}}}
+
+const ground=ctx.createLinearGradient(0,H*.75,0,H);ground.addColorStop(0,'#152d3200');ground.addColorStop(.4,'#132a2b');ground.addColorStop(1,'#091b22');ctx.fillStyle=ground;ctx.fillRect(0,H*.74,W,H*.26);
+const base=Math.min(H*.85,footerTop-(W<600?55:0)),scale=Math.max(.2,Math.min(W/430,(base-headerBottom-18)/425)),cx=W*.5,cy=base-260*scale,heart=185*scale;
+ctx.save();ctx.translate(cx,base);ctx.rotate(Math.sin(t*.85)*.035);ctx.translate(-cx,-base);
+ctx.save();ctx.translate(cx,base);ctx.scale(scale,scale);
+// Keep branches inside the canopy, with a separate opening for the trunk.
+ctx.beginPath();outline.forEach((point,i)=>{const x=point.x*185*.94,y=-260-point.y*185*.94;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});ctx.closePath();ctx.rect(-24,-145,48,150);ctx.clip();
+ctx.lineCap='round';for(const b of branches){let p=ease((t-b.start)/1.5);if(!p)continue;ctx.strokeStyle=b.width>10?'#8e6c46':'#a17c4f';ctx.lineWidth=b.width;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.quadraticCurveTo(b.x+(b.ex-b.x)*p*.32,b.y+(b.ey-b.y)*p*.55,b.x+(b.ex-b.x)*p,b.y+(b.ey-b.y)*p);ctx.stroke();}ctx.restore();
+const halo=ctx.createRadialGradient(cx,cy,0,cx,cy,heart*1.65);halo.addColorStop(0,'#f8cf4220');halo.addColorStop(1,'#f8cf4200');ctx.globalAlpha=ease((t-4)/6);ctx.fillStyle=halo;ctx.fillRect(cx-heart*1.7,cy-heart*1.7,heart*3.4,heart*3.4);ctx.globalAlpha=1;
+for(const f of blooms){let p=ease((t-f.delay)/1.25);if(p){const sway=Math.sin(t*1.3+f.phase)*2.8*scale;flower(cx+f.x*heart+sway,cy+f.y*heart+Math.cos(t*1.1+f.phase)*1.6*scale,f.r*scale*p,f.rot+Math.sin(t*1.2+f.phase)*.15,f.tone);}}
+ctx.restore();
+for(const b of blades){ctx.strokeStyle='#34524470';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(b.x*W,b.y*H);ctx.quadraticCurveTo(b.x*W-3,b.y*H-b.h*.5,b.x*W+Math.sin(t*.5+b.p)*9,b.y*H-b.h);ctx.stroke();}
+for(const f of tulips)tulip(f,t);
+for(let i=0;i<18;i++){const x=W*(.08+((i*.137)% .86))+Math.sin(t*.3+i)*15,y=H*(.52+((i*.079)%.36))+Math.cos(t*.5+i)*12;ctx.globalAlpha=(.5+.5*Math.sin(t+i))* .6*ease((t-7)/3);ctx.fillStyle='#ffe59a';ctx.beginPath();ctx.arc(x,y,1.4,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
+function tick(now){elapsed+=(now-last)/1000;last=now;draw(elapsed);frame=requestAnimationFrame(tick);}
+function play(){cancelAnimationFrame(frame);last=performance.now();if(motionEnabled)frame=requestAnimationFrame(tick);else draw(elapsed);}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelAnimationFrame(frame);else play();});
+const song=document.getElementById('song'),music=document.getElementById('music'),musicStatus=document.getElementById('music-status');
+function updateMusic(){music.textContent=song.paused?'♫  Escuchar canción':'♫  Pausar canción';music.setAttribute('aria-pressed',String(!song.paused));}
+music.addEventListener('click',async()=>{if(!song.paused){song.pause();return;}musicStatus.textContent='';music.disabled=true;music.textContent='♫  Cargando…';try{if(!song.getAttribute('src'))song.src='./cancion.mp3';song.volume=.65;await song.play();}catch(error){musicStatus.textContent=error.name==='NotAllowedError'?'Toca otra vez para escuchar la canción.':'La canción todavía no está disponible 💛';}finally{music.disabled=false;updateMusic();resize();}});
+song.addEventListener('play',updateMusic);song.addEventListener('pause',updateMusic);
+window.addEventListener('resize',resize);resize();play();
+</script>
+</body>
+</html>
